@@ -52,7 +52,7 @@ const ng2ComponentInputs = (ng2CompClass: Type) => {
       .filter(x => x instanceof ComponentMetadata && !!x.inputs)
       // Get the .inputs string array
       .map(x => x.inputs)
-      .reduce(flattenR)
+      .reduce(flattenR, [])
       .map(input => ({ token: input, prop: input }));
 
   return _props.concat(inputs) as InputMapping[];
@@ -165,9 +165,11 @@ export class UIView {
     this.componentRef = null;
   }
 
+  private _destroyed = false;
   ngOnDestroy() {
     if (this.deregister) this.deregister();
     this.disposeLast();
+    this._destroyed = true;
   }
 
   viewConfigUpdated(config: ViewConfig) {
@@ -196,6 +198,9 @@ export class UIView {
     let componentType = <Type> viewDecl.component;
 
     let createComponent = (factory: ComponentFactory<any>) => {
+      if (this._destroyed) {
+          return;
+      }
       let parentInjector = this.viewContainerRef.injector;
       let childInjector = ReflectiveInjector.resolveAndCreate(rawProviders, parentInjector);
       let ref = this.componentRef = this.componentTarget.createComponent(factory, undefined, childInjector);
